@@ -1,4 +1,4 @@
-#!/usr/bin/eenv python3
+#!/usr/bin/env python3
 ''' Redis task '''
 import redis
 from typing import Union
