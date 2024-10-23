@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-'''Implementing an expiring web cache and tracker'''
+''' Implementing an expiring web cache and tracker '''
 import redis
 import requests
 from typing import Callable
@@ -7,10 +7,10 @@ from functools import wraps
 
 
 def access(method: Callable) -> Callable:
-    '''decorator for get_page'''
+    ''' decorator for get_page '''
     @wraps(method)
     def count(url: str) -> str:
-        '''track how many times a particular URL was accessed'''
+        ''' track how many times a particular URL was accessed in the key '''
         redis_client = redis.Redis()
         redis_client.incr(f'count:{url}')
         cached = redis_client.get(f'cached:{url}')
@@ -24,9 +24,12 @@ def access(method: Callable) -> Callable:
 
 @access
 def get_page(url: str) -> str:
-    '''send request to url'''
+    '''
+    uses the requests module to obtain
+    the HTML content of a particular URL and returns it.
+    '''
     return requests.get(url).text
 
 
 if __name__ == '__main__':
-    print(get_page('http://google.com'))
+    get_page('http://slowwly.robertomurray.co.uk/delay/5000/url/http://www.google.com')
