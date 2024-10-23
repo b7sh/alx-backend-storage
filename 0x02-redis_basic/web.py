@@ -10,12 +10,15 @@ r = redis.Redis()
 
 
 def generate_redis_key(url: str) -> str:
+    ''' generate the key '''
     return hashlib.md5(url.encode()).hexdigest()
 
 
 def cache_page(func):
+    ''' track '''
     @wraps(func)
     def wrapper(url: str):
+        ''' the wrapper fuction '''
         redis_key = generate_redis_key(url)
         cached_content = r.get(f"cached:{redis_key}")
         if cached_content:
@@ -33,6 +36,10 @@ def cache_page(func):
 
 @cache_page
 def get_page(url: str) -> str:
+    '''
+    uses the requests module to obtain
+    the HTML content of a particular URL and returns it.
+    '''
     try:
         response = requests.get(url)
         response.raise_for_status()
@@ -42,11 +49,4 @@ def get_page(url: str) -> str:
 
 
 if __name__ == "__main__":
-    url = 'http://slowwly.robertomurray.co.uk/'
-
-    print(get_page(url))
-
-    print(get_page(url))
-
-    redis_key = generate_redis_key(url)
-    print(f"URL accessed {r.get(f'count:{redis_key}').decode('utf-8')} times.")
+    print(get_page('http://slowwly.robertomurray.co.uk/delay/5000/url/http://www.google.com'))
