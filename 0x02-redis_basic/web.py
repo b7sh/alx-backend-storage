@@ -12,12 +12,12 @@ def access(method: Callable) -> Callable:
     def count(url: str) -> str:
         '''track how many times a particular URL was accessed'''
         redis_client = redis.Redis()
-        redis_client.incr('count:{}'.format(url))
-        cached = redis_client.get('cached:{}'.format(url))
+        redis_client.incr(f'count:{url}')
+        cached = redis_client.get(f'cached:{url}')
         if cached:
             return cached.decode('utf-8')
         res = method(url)
-        redis_client.setex('cached:{}'.format(url), 10, res)
+        redis_client.setex(f'cached:{url}', 10, res)
         return res
     return count
 
