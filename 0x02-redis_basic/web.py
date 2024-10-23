@@ -1,52 +1,36 @@
 #!/usr/bin/env python3
-''' Implementing an expiring web cache and tracker '''
+'''Implementing an expiring web cache and tracker'''
 import redis
 import requests
 from functools import wraps
-import hashlib
 
 
-r = redis.Redis()
+redis_client = redis.Redis()
 
 
-def generate_redis_key(url: str) -> str:
-    ''' generate the key '''
-    return hashlib.md5(url.encode()).hexdigest()
+def access(method):
+    '''Decorator for get_page to track URL access and caching.'''
+    @wraps(method)
+    def count(url: str) -> str:
+        '''Track how many times a particular URL was accessed.'''
+        cached = redis_client.get(f'cached:{url}')
+        if cached:
+            redis_client.incr(f'count:{url}')
+            return cached.decode('utf-8')
+        res = method(url)
+        redis_client.setex(f'cached:{url}', 10, res)
+        redis_client.incr(f'count:{url}')
+        return res
+    return count
 
 
-def cache_page(func):
-    ''' track '''
-    @wraps(func)
-    def wrapper(url: str):
-        ''' the wrapper fuction '''
-        redis_key = generate_redis_key(url)
-        cached_content = r.get(f"cached:{redis_key}")
-        if cached_content:
-            return cached_content.decode('utf-8')
-
-        result = func(url)
-
-        r.setex(f"cached:{redis_key}", 10, result)
-
-        r.incr(f"count:{redis_key}")
-
-        return result
-    return wrapper
-
-
-@cache_page
+@access
 def get_page(url: str) -> str:
-    '''
-    uses the requests module to obtain
-    the HTML content of a particular URL and returns it.
-    '''
-    try:
-        response = requests.get(url)
-        response.raise_for_status()
-        return response.text
-    except requests.RequestException as e:
-        return f"Error fetching the page: {e}"
+    '''Send request to the URL.'''
+    return requests.get(url).text
 
 
-if __name__ == "__main__":
-    get_page('http://www.google.com')
+if __name__ == '__main__':
+    get_page(
+            '''http://slowwly.robertomurray.co.uk/delay/5000/url/
+            http://www.google.com''')
